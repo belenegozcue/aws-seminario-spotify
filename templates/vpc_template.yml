@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  VpcCidrBlock:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for the main VPC
+  PrvSubnetACidr:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CIDR block for the Private subnet A
+  PubSubnetACidr:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CIDR block for the Public subnet A
+  PrvSubnetBCidr:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CIDR block for the Private subnet B
+  PubSubnetBCidr:
+    Type: String
+    Default: 10.0.4.0/24
+    Description: CIDR block for the Public subnet B
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          Default: "Network address space"
+        Parameters:
+          - VpcCidrBlock
+          - PrvSubnetACidr
+          - PubSubnetACidr
+          - PrvSubnetBCidr
+          - PubSubnetBCidr
+    ParameterLabels:
+      VpcCidrBlock:
+        default: "Vpc CIDR block"
+
+Resources:
+  MyMainVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: MyMainVPC
+        - Key: Owner
+          Value: Demo
+  PrvSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: MyMainVPC
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      CidrBlock: !Ref PrvSubnetACidr
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+        - Key: Name
+          Value: PrvSubnet
+        - Key: Owner
+          Value: Demo
+  PubSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: MyMainVPC
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      CidrBlock: !Ref PubSubnetACidr
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: PubSubnet
+        - Key: Owner
+          Value: Demo
+  PrvSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: MyMainVPC
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+      CidrBlock: !Ref PrvSubnetBCidr
+      MapPublicIpOnLaunch: 'false'
+      Tags:
+        - Key: Name
+          Value: PrvSubnet
+        - Key: Owner
+          Value: Demo
+  PubSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: MyMainVPC
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+      CidrBlock: !Ref PubSubnetBCidr
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: PubSubnet
+        - Key: Owner
+          Value: Demo
+
+  MyInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: MyInternetGateway
+      - Key: Owner
+        Value: Demo
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref MyInternetGateway
+      VpcId: !Ref MyMainVPC
+
+  PubRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyMainVPC
+      Tags:
+      - Key: Name
+        Value: PubRouteTable
+      - Key: Owner
+        Value: Demo
+
+  PrvRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyMainVPC
+      Tags:
+      - Key: Name
+        Value: PrvRouteTable
+      - Key: Owner
+        Value: Demo
+
+  PubIGRoute:
+    Type: AWS::EC2::Route
+    DependsOn: MyInternetGateway
+    Properties:
+      RouteTableId: !Ref PubRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MyInternetGateway
+
+  PubARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSubnetA
+      RouteTableId: !Ref PubRouteTable
+
+  PubBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PubSubnetB
+      RouteTableId: !Ref PubRouteTable
+
+  PrvARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrvSubnetA
+      RouteTableId: !Ref PrvRouteTable
+
+  PrvBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrvSubnetB
+      RouteTableId: !Ref PrvRouteTable
+
+Outputs:
+  ExpMyVpc:
+    Description: My Main Vpc
+    Value: !Ref MyMainVPC
+    Export:
+      Name: MyMainVPC
+  ExpPrvSubnetA:
+    Description: Private subnet A
+    Value: !Ref PrvSubnetA
+    Export:
+      Name: PrvSubnetA
+  ExpPrvSubnetB:
+    Description: Private subnet B
+    Value: !Ref PrvSubnetB
+    Export:
+      Name: PrvSubnetB
+  ExpPubSubnetA:
+    Description: Public subnet A
+    Value: !Ref PubSubnetA
+    Export:
+      Name: PubSubnetA
+  ExpPubSubnetB:
+    Description: Public Subnet B
+    Value: !Ref PubSubnetB
+    Export:
+      Name: PubSubnetB
