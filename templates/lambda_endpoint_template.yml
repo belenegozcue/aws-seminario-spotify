@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  LambdaFunction:
+  LambdaEndpointFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
       FunctionName: endpoint-lambda-template
@@ -33,10 +33,9 @@ Resources:
               artist = event['queryStringParameters']['artist'] if 'queryStringParameters' in event else None
 
               with conn.cursor() as cur:
-                  qry = "SELECT name FROM spotify_data_clean WHERE artist_0 = %s"
+                  qry = "SELECT AVG(danceability) as avg_danceability FROM spotify_data_clean WHERE artist_0 = %s"
                   cur.execute(qry, (artist,))
-                  results = cur.fetchall()
-                  names = [result['name'] for result in results]
+                  result = cur.fetchone()
+                  avg_danceability = result['avg_danceability']
             
-              return names
-
+              return avg_danceability
