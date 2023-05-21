@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: turn-on-off-rds
+      Handler: index.lambda_handler
+      Runtime: python3.10
+      Role: arn:aws:iam::404728616702:role/LabRole
+      Code:
+        ZipFile: |
+          import boto3
+          import datetime
+
+          def lambda_handler(event, context):
+              # Set the AWS region and RDS instance identifier
+              region = 'us-east-1'
+              instance_id = 'spotifydb'
+
+              # Create an RDS client
+              rds_client = boto3.client('rds', region_name=region)
+
+              # Get the current time in UTC
+              current_time = datetime.datetime.now(datetime.timezone.utc)
+
+              # Set the start and stop time for the RDS database
+              start_time = current_time.replace(hour=23, minute=0, second=0, microsecond=0)
+              stop_time = current_time.replace(hour=8, minute=0, second=0, microsecond=0)
+
+              # Compare the current time with the start and stop time
+              if current_time >= start_time and current_time < stop_time:
+                  # Start the RDS database
+                  response = rds_client.start_db_instance(DBInstanceIdentifier=instance_id)
+                  print("RDS database started.")
+              else:
+                  # Stop the RDS database
+                  response = rds_client.stop_db_instance(DBInstanceIdentifier=instance_id)
+                  print("RDS database stopped.")
+
+  EventRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: turn-on-off-schedule
+      Description: Schedule to turn on and off RDS instance
+      ScheduleExpression: 'cron(0 8,23 * * ? *)'  # Run at 8 AM and 11 PM daily
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LambdaFunction.Arn
+          Id: TargetFunction
+

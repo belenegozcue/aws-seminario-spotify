@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  DbInstanceName:
+    Type: String
+    Description: Name your database instance
+  DbPassword:
+    Type: String
+    Description: Db password
+    NoEcho: true
+  
+
+Resources:
+  DbSubnetGroupPublic:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties: 
+      DBSubnetGroupDescription: Public subnets for database
+      DBSubnetGroupName: PublicSubnets
+      SubnetIds: 
+        - !ImportValue PubSubnetA
+        - !ImportValue PubSubnetB
+
+  DbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow traffic to port 3306 from 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+      VpcId: !ImportValue MyMainVPC
+
+  SpotifyRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Ref DbInstanceName
+      DBInstanceClass: db.t2.micro
+      AllocatedStorage: 5
+      Engine: mysql
+      EngineVersion: "8.0.32"
+      MasterUsername: "admin"
+      MasterUserPassword: !Ref DbPassword
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroup
+      DBSubnetGroupName: !Ref DbSubnetGroupPublic
+      MultiAZ: false
+      PubliclyAccessible: true
+      StorageType: gp2
+      BackupRetentionPeriod: 0
+      DeletionProtection: false
+      EnableIAMDatabaseAuthentication: false
+      Tags:
+        - Key: Name
+          Value: MyDBInstanceName
+      StorageEncrypted: false
