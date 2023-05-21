@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: endpoint-lambda-template
+      Handler: index.lambda_handler
+      Timeout: 600
+      Runtime: python3.10
+      Role: arn:aws:iam::404728616702:role/LabRole
+      Code:
+        ZipFile: |
+          import json
+          import pymysql
+          import sys
+
+          rds_host = 'spotidb.cesmz91twe8c.us-east-1.rds.amazonaws.com'
+          name = 'admin'
+          password = 'admin123'
+          db_name = 'spotidb'
+          port = 3306
+
+          try:
+              conn = pymysql.connect(host=rds_host, user=name, passwd=password, db=db_name,
+                                    connect_timeout=10, cursorclass=pymysql.cursors.DictCursor)
+              print('Connected to the database')
+
+          except Exception as e:
+              sys.exit(str(e))
+
+          def lambda_handler(event, context):
+              # Get query parameter values from the event
+              artist = event['queryStringParameters']['artist'] if 'queryStringParameters' in event else None
+
+              with conn.cursor() as cur:
+                  qry = "SELECT name FROM spotify_data_clean WHERE artist_0 = %s"
+                  cur.execute(qry, (artist,))
+                  results = cur.fetchall()
+                  names = [result['name'] for result in results]
+            
+              return names
+

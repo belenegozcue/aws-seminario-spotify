@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+    Random:
+        Type: String
+        Description: Random string to make bucket name unique
+Resources:
+  SpotifyBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Join
+        - ''
+        - - 'spotify-data-bucket-'
+          - !Ref 
+          
