@@ -1,0 +1,23 @@
+CREATE TABLE spotify_data_clean (
+    name VARCHAR(255),
+    popularity INT,
+    duration_ms INT,
+    explicit BOOLEAN,
+    artists VARCHAR(255),
+    release_date DATE,
+    danceability FLOAT,
+    energy FLOAT,
+    _key INT,
+    loudness FLOAT,
+    mode INT,
+    speechiness FLOAT,
+    acousticness FLOAT,
+    instrumentalness FLOAT,
+    liveness FLOAT,
+    valence FLOAT,
+    tempo FLOAT,
+    artist_0 VARCHAR(255),
+    artist_1 VARCHAR(255),
+    artist_2 VARCHAR(255),
+    artist_3 VARCHAR(255)
+);
